@@ -50,33 +50,25 @@ class BYOLTrainer:
 
         niter = 0
         model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
-
         self.initializes_target_network()
 
         for epoch_counter in range(self.max_epochs):
-
             for (batch_view_1, batch_view_2), _ in train_loader:
-
                 batch_view_1 = batch_view_1.to(self.device)
                 batch_view_2 = batch_view_2.to(self.device)
-
                 if niter == 0:
                     grid = torchvision.utils.make_grid(batch_view_1[:32])
                     self.writer.add_image('views_1', grid, global_step=niter)
-
                     grid = torchvision.utils.make_grid(batch_view_2[:32])
                     self.writer.add_image('views_2', grid, global_step=niter)
 
                 loss = self.update(batch_view_1, batch_view_2)
                 self.writer.add_scalar('loss', loss, global_step=niter)
-
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-
                 self._update_target_network_parameters()  # update the key encoder
                 niter += 1
-
             print("End of epoch {}".format(epoch_counter))
 
         # save checkpoints
@@ -86,12 +78,10 @@ class BYOLTrainer:
         # compute query feature
         predictions_from_view_1 = self.predictor(self.online_network(batch_view_1))
         predictions_from_view_2 = self.predictor(self.online_network(batch_view_2))
-
         # compute key features
         with torch.no_grad():
             targets_to_view_2 = self.target_network(batch_view_1)
             targets_to_view_1 = self.target_network(batch_view_2)
-
         loss = self.regression_loss(predictions_from_view_1, targets_to_view_1)
         loss += self.regression_loss(predictions_from_view_2, targets_to_view_2)
         return loss.mean()
